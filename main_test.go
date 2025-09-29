@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -33,8 +34,18 @@ func TestVersionFlag(t *testing.T) {
 	}
 
 	// Version should contain at least a number
-	if !contains(version, "1.0") {
-		t.Errorf("Version should contain '1.0', got: %s", version)
+	result := strings.Split(version, ".")
+	major, minor, date := result[0], result[1], result[2]
+	_, err := strconv.Atoi(major)
+	if err != nil {
+		t.Errorf("Version should contain a major version number, got: %s", version)
+	}
+	_, err = strconv.Atoi(minor)
+	if err != nil {
+		t.Errorf("Version should contain a minor version number, got: %s", version)
+	}
+	if date == "" {
+		t.Errorf("Version should contain a date, got: %s", version)
 	}
 }
 
