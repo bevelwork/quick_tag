@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/config"
+	qc "github.com/bevelwork/quick_color"
 )
 
 // TestMain runs before all tests
@@ -204,23 +205,23 @@ func TestGenericNameDetection(t *testing.T) {
 // TestColorFunctions tests the color utility functions
 func TestColorFunctions(t *testing.T) {
 	// Test color function
-	colored := color("test", ColorRed)
+	colored := color("test", qc.ColorRed)
 	if colored == "test" {
 		t.Error("Color function should add color codes")
 	}
 
 	// Test colorBold function
-	boldColored := colorBold("test", ColorRed)
+	boldColored := colorBold("test", qc.ColorRed)
 	if boldColored == "test" {
 		t.Error("ColorBold function should add color and bold codes")
 	}
 
 	// Test that both functions include the reset code
-	if !contains(colored, ColorReset) {
+	if !contains(colored, qc.ColorReset) {
 		t.Error("Color function should include reset code")
 	}
 
-	if !contains(boldColored, ColorReset) {
+	if !contains(boldColored, qc.ColorReset) {
 		t.Error("ColorBold function should include reset code")
 	}
 }
@@ -228,22 +229,22 @@ func TestColorFunctions(t *testing.T) {
 // TestTagDisplayColors tests the color styling for tag displays
 func TestTagDisplayColors(t *testing.T) {
 	// Test untagged display (should be yellow)
-	untaggedDisplay := color("untagged", ColorYellow)
-	expectedUntagged := ColorYellow + "untagged" + ColorReset
+	untaggedDisplay := color("untagged", qc.ColorYellow)
+	expectedUntagged := qc.ColorYellow + "untagged" + qc.ColorReset
 	if untaggedDisplay != expectedUntagged {
 		t.Errorf("untagged display = %q, expected %q", untaggedDisplay, expectedUntagged)
 	}
 
 	// Test old tag display (should be red)
-	oldTagDisplay := color("old-tag-name", ColorRed)
-	expectedOldTag := ColorRed + "old-tag-name" + ColorReset
+	oldTagDisplay := color("old-tag-name", qc.ColorRed)
+	expectedOldTag := qc.ColorRed + "old-tag-name" + qc.ColorReset
 	if oldTagDisplay != expectedOldTag {
 		t.Errorf("old tag display = %q, expected %q", oldTagDisplay, expectedOldTag)
 	}
 
 	// Test new tag display (should be green)
-	newTagDisplay := color("new-tag-name", ColorGreen)
-	expectedNewTag := ColorGreen + "new-tag-name" + ColorReset
+	newTagDisplay := color("new-tag-name", qc.ColorGreen)
+	expectedNewTag := qc.ColorGreen + "new-tag-name" + qc.ColorReset
 	if newTagDisplay != expectedNewTag {
 		t.Errorf("new tag display = %q, expected %q", newTagDisplay, expectedNewTag)
 	}
@@ -255,19 +256,19 @@ func TestResourceStateColors(t *testing.T) {
 		state    string
 		expected string
 	}{
-		{"running", ColorGreen},
-		{"available", ColorGreen},
-		{"in-use", ColorGreen},
-		{"stopped", ColorRed},
-		{"stopping", ColorRed},
-		{"detaching", ColorRed},
-		{"pending", ColorYellow},
-		{"creating", ColorYellow},
-		{"attaching", ColorYellow},
-		{"terminated", ColorRed},
-		{"deleting", ColorRed},
-		{"detached", ColorRed},
-		{"unknown-state", ColorWhite},
+		{"running", qc.ColorGreen},
+		{"available", qc.ColorGreen},
+		{"in-use", qc.ColorGreen},
+		{"stopped", qc.ColorRed},
+		{"stopping", qc.ColorRed},
+		{"detaching", qc.ColorRed},
+		{"pending", qc.ColorYellow},
+		{"creating", qc.ColorYellow},
+		{"attaching", qc.ColorYellow},
+		{"terminated", qc.ColorRed},
+		{"deleting", qc.ColorRed},
+		{"detached", qc.ColorRed},
+		{"unknown-state", qc.ColorWhite},
 	}
 
 	for _, tt := range tests {

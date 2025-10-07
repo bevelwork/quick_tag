@@ -683,7 +683,31 @@ func showProgressWithResult[T any](message string, fn func() (T, error)) (T, err
 	return qc.WithProgress(os.Stdout, message, 100*time.Millisecond, fn)
 }
 
-// startThrobber was replaced by qc.WithProgress at call sites; no separate spinner needed.
+// startThrobber provides a simple spinner wrapper for tests expecting this symbol.
+func startThrobber(message string) (stop func()) {
+	sp := qc.NewSpinner(os.Stdout, message, 100*time.Millisecond)
+	sp.Start()
+	return func() { sp.Stop() }
+}
+
+// colorBold wraps a string with color and bold codes (compat for tests)
+func colorBold(text, colorCode string) string { return qc.ColorizeBold(text, colorCode) }
+
+// colorResourceState returns a qc color for a given resource state (compat for tests)
+func colorResourceState(state string) string {
+	switch state {
+	case "running", "available", "in-use":
+		return qc.ColorGreen
+	case "stopped", "stopping", "detaching":
+		return qc.ColorRed
+	case "pending", "creating", "attaching":
+		return qc.ColorYellow
+	case "terminated", "deleting", "detached":
+		return qc.ColorRed
+	default:
+		return qc.ColorWhite
+	}
+}
 
 // printHeader prints the application header
 func printHeader(privateMode bool, callerIdentity *sts.GetCallerIdentityOutput) {
@@ -1041,7 +1065,8 @@ func isQuickTagNameStillValid(name, resourceType, currentState, extraInfo string
 	return true
 }
 
-// isGenericName was previously a compatibility wrapper; callers now use isQuickTagCreatedName directly.
+// isGenericName is a compatibility wrapper for older tests.
+func isGenericName(name, resourceType string) bool { return isQuickTagCreatedName(name, resourceType) }
 
 // selectResources displays resources and allows user to select which ones to tag
 func selectResources(resources []*ResourceInfo) ([]*ResourceInfo, bool) {
