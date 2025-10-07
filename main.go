@@ -23,22 +23,12 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
+	qc "github.com/bevelwork/quick_color"
 	versionpkg "github.com/bevelwork/quick_tag/version"
 	"gopkg.in/yaml.v3"
 )
 
-// ANSI color codes for terminal output
-const (
-	ColorReset  = "\033[0m"
-	ColorRed    = "\033[31m"
-	ColorGreen  = "\033[32m"
-	ColorYellow = "\033[33m"
-	ColorBlue   = "\033[34m"
-	ColorPurple = "\033[35m"
-	ColorCyan   = "\033[36m"
-	ColorWhite  = "\033[37m"
-	ColorBold   = "\033[1m"
-)
+// Use quick_color (aliased as qc) directly for colors
 
 // ResourceInfo represents a resource that needs tagging
 type ResourceInfo struct {
@@ -130,7 +120,7 @@ func main() {
 	}
 
 	if len(untaggedResources) == 0 {
-		fmt.Printf("%s All resources already have Name tags!\n", color("✅", ColorGreen))
+		fmt.Printf("%s All resources already have Name tags!\n", color("✅", qc.ColorGreen))
 		return
 	}
 
@@ -148,7 +138,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	fmt.Printf("\n%s Successfully completed tagging process!\n", color("✅", ColorGreen))
+	fmt.Printf("\n%s Successfully completed tagging process!\n", color("✅", qc.ColorGreen))
 }
 
 // findUntaggedResources scans for EC2 instances, EBS volumes, and ENIs without Name tags
@@ -676,130 +666,38 @@ func getAttachmentNames(ctx context.Context, config *Config, attachmentIDs map[s
 // Helper functions
 
 // color wraps a string with the specified color code
-func color(text, colorCode string) string {
-	return colorCode + text + ColorReset
-}
+func color(text, colorCode string) string { return qc.Color(text, colorCode) }
 
 // Progress indicator functions
-var throbberChars = []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
 
 // showProgress runs a throbber animation while executing a function
 func showProgress(message string, fn func() error) error {
-	done := make(chan error, 1)
-
-	// Start the operation in a goroutine
-	go func() {
-		done <- fn()
-	}()
-
-	// Show throbber while waiting
-	i := 0
-	for {
-		select {
-		case err := <-done:
-			// Clear the line and return
-			fmt.Printf("\r\033[K")
-			return err
-		default:
-			// Show throbber
-			fmt.Printf("\r%s %s", throbberChars[i%len(throbberChars)], message)
-			i++
-			// Small delay to make throbber visible
-			time.Sleep(100 * time.Millisecond)
-		}
-	}
+	_, err := qc.WithProgress(os.Stdout, message, 100*time.Millisecond, func() (struct{}, error) {
+		return struct{}{}, fn()
+	})
+	return err
 }
 
 // showProgressWithResult runs a throbber animation while executing a function that returns a result
 func showProgressWithResult[T any](message string, fn func() (T, error)) (T, error) {
-	done := make(chan struct {
-		result T
-		err    error
-	}, 1)
-
-	// Start the operation in a goroutine
-	go func() {
-		result, err := fn()
-		done <- struct {
-			result T
-			err    error
-		}{result, err}
-	}()
-
-	// Show throbber while waiting
-	i := 0
-	for {
-		select {
-		case res := <-done:
-			// Clear the line and return
-			fmt.Printf("\r\033[K")
-			return res.result, res.err
-		default:
-			// Show throbber
-			fmt.Printf("\r%s %s", throbberChars[i%len(throbberChars)], message)
-			i++
-			// Small delay to make throbber visible
-			time.Sleep(100 * time.Millisecond)
-		}
-	}
+	return qc.WithProgress(os.Stdout, message, 100*time.Millisecond, fn)
 }
 
-// startThrobber starts a spinner with a fixed message and returns a stop function.
-// Safe to call from long-running operations where you cannot wrap the whole body in a closure.
-func startThrobber(message string) (stop func()) {
-	done := make(chan struct{})
-	go func() {
-		i := 0
-		ticker := time.NewTicker(100 * time.Millisecond)
-		defer ticker.Stop()
-		for {
-			select {
-			case <-done:
-				fmt.Printf("\r\033[K")
-				return
-			case <-ticker.C:
-				fmt.Printf("\r%s %s", throbberChars[i%len(throbberChars)], message)
-				i++
-			}
-		}
-	}()
-	return func() { close(done) }
-}
-
-// colorBold wraps a string with the specified color code and bold formatting
-func colorBold(text, colorCode string) string {
-	return colorCode + ColorBold + text + ColorReset
-}
-
-// colorResourceState returns the appropriate color for resource state
-func colorResourceState(state string) string {
-	switch state {
-	case "running", "available", "in-use":
-		return ColorGreen
-	case "stopped", "stopping", "detaching":
-		return ColorRed
-	case "pending", "creating", "attaching":
-		return ColorYellow
-	case "terminated", "deleting", "detached":
-		return ColorRed
-	default:
-		return ColorWhite
-	}
-}
+// startThrobber was replaced by qc.WithProgress at call sites; no separate spinner needed.
 
 // printHeader prints the application header
 func printHeader(privateMode bool, callerIdentity *sts.GetCallerIdentityOutput) {
 	header := []string{
-		color(strings.Repeat("-", 40), ColorBlue),
+		color(strings.Repeat("-", 40), qc.ColorBlue),
 		"-- AWS Quick Tag --",
-		color(strings.Repeat("-", 40), ColorBlue),
+		color(strings.Repeat("-", 40), qc.ColorBlue),
 	}
 	if !privateMode {
 		header = append(header, fmt.Sprintf(
 			"  Account: %s \n  User: %s",
 			*callerIdentity.Account, *callerIdentity.Arn,
 		))
-		header = append(header, color(strings.Repeat("-", 40), ColorBlue))
+		header = append(header, color(strings.Repeat("-", 40), qc.ColorBlue))
 	}
 
 	fmt.Println(strings.Join(header, "\n"))
@@ -1143,15 +1041,11 @@ func isQuickTagNameStillValid(name, resourceType, currentState, extraInfo string
 	return true
 }
 
-// isGenericName checks if a name is a generic placeholder that should be updated
-// This function is kept for backward compatibility but now delegates to isQuickTagCreatedName
-func isGenericName(name, resourceType string) bool {
-	return isQuickTagCreatedName(name, resourceType)
-}
+// isGenericName was previously a compatibility wrapper; callers now use isQuickTagCreatedName directly.
 
 // selectResources displays resources and allows user to select which ones to tag
 func selectResources(resources []*ResourceInfo) ([]*ResourceInfo, bool) {
-	fmt.Printf("\n%s\n", color("Resources without Name tags:", ColorBlue))
+	fmt.Printf("\n%s\n", color("Resources without Name tags:", qc.ColorBlue))
 
 	longestID := 0
 	for _, resource := range resources {
@@ -1164,20 +1058,20 @@ func selectResources(resources []*ResourceInfo) ([]*ResourceInfo, bool) {
 		// Alternate row colors for better readability
 		var rowColor string
 		if i%2 == 0 {
-			rowColor = ColorWhite
+			rowColor = qc.ColorWhite
 		} else {
-			rowColor = ColorCyan
+			rowColor = qc.ColorCyan
 		}
 
 		// Show current name (or "untagged" if empty) and suggested name with color styling
 		var currentNameDisplay string
 		if resource.Name == "" {
-			currentNameDisplay = color("untagged", ColorYellow)
+			currentNameDisplay = color("untagged", qc.ColorYellow)
 		} else {
-			currentNameDisplay = color(resource.Name, ColorRed)
+			currentNameDisplay = color(resource.Name, qc.ColorRed)
 		}
 
-		suggestedNameDisplay := color(resource.SuggestedName, ColorGreen)
+		suggestedNameDisplay := color(resource.SuggestedName, qc.ColorGreen)
 
 		entry := fmt.Sprintf(
 			"%3d. %-*s %s -> %s",
@@ -1187,19 +1081,19 @@ func selectResources(resources []*ResourceInfo) ([]*ResourceInfo, bool) {
 	}
 
 	reader := bufio.NewReader(os.Stdin)
-	fmt.Printf("%s", color("Select resources to tag (comma-separated numbers, or 'all' for all). Enter for all resources: ", ColorYellow))
+	fmt.Printf("%s", color("Select resources to tag (comma-separated numbers, or 'all' for all). Enter for all resources: ", qc.ColorYellow))
 	input, err := reader.ReadString('\n')
 	if err != nil {
 		log.Fatal(err)
 	}
 	input = strings.TrimSpace(input)
 	if input == "" {
-		fmt.Printf("%s No input provided, selecting all resources for sequential tagging.\n", color("ℹ️", ColorCyan))
+		fmt.Printf("%s No input provided, selecting all resources for sequential tagging.\n", color("ℹ️", qc.ColorCyan))
 		return resources, false // false = prompt for each tag
 	}
 
 	if strings.ToLower(input) == "all" {
-		fmt.Printf("%s Auto-applying all tags without individual confirmation.\n", color("ℹ️", ColorCyan))
+		fmt.Printf("%s Auto-applying all tags without individual confirmation.\n", color("ℹ️", qc.ColorCyan))
 		return resources, true // true = auto-apply all tags
 	}
 
@@ -1212,15 +1106,15 @@ func selectResources(resources []*ResourceInfo) ([]*ResourceInfo, bool) {
 			if idx >= 1 && idx <= len(resources) {
 				selected = append(selected, resources[idx-1])
 			} else {
-				fmt.Printf("%s Invalid selection: %d (valid range: 1-%d)\n", color("⚠️", ColorYellow), idx, len(resources))
+				fmt.Printf("%s Invalid selection: %d (valid range: 1-%d)\n", color("⚠️", qc.ColorYellow), idx, len(resources))
 			}
 		} else {
-			fmt.Printf("%s Invalid input: '%s' (expected number)\n", color("⚠️", ColorYellow), part)
+			fmt.Printf("%s Invalid input: '%s' (expected number)\n", color("⚠️", qc.ColorYellow), part)
 		}
 	}
 
 	if len(selected) == 0 {
-		fmt.Printf("%s No valid selections made.\n", color("ℹ️", ColorCyan))
+		fmt.Printf("%s No valid selections made.\n", color("ℹ️", qc.ColorCyan))
 	}
 
 	return selected, false // false = prompt for each tag
@@ -1232,29 +1126,29 @@ func applyTags(ctx context.Context, config *Config, resources []*ResourceInfo, a
 
 	for i, resource := range resources {
 		// Show the resource to be tagged
-		fmt.Printf("\n%s Tag %d of %d:\n", color("🏷️", ColorBlue), i+1, len(resources))
+		fmt.Printf("\n%s Tag %d of %d:\n", color("🏷️", qc.ColorBlue), i+1, len(resources))
 		fmt.Printf("  Resource: %s %s\n", resource.Type, resource.ID)
 
 		// Display current name with color styling
 		if resource.Name == "" {
-			fmt.Printf("  Current: %s\n", color("untagged", ColorYellow))
+			fmt.Printf("  Current: %s\n", color("untagged", qc.ColorYellow))
 		} else {
-			fmt.Printf("  Current: %s\n", color(resource.Name, ColorRed))
+			fmt.Printf("  Current: %s\n", color(resource.Name, qc.ColorRed))
 		}
 
 		// Display new name with color styling
-		fmt.Printf("  New: %s\n", color(resource.SuggestedName, ColorGreen))
+		fmt.Printf("  New: %s\n", color(resource.SuggestedName, qc.ColorGreen))
 
 		// Prompt user to continue (unless auto-applying)
 		if !autoApply {
 			reader := bufio.NewReader(os.Stdin)
-			fmt.Printf("%s Press Enter to apply this tag (or Ctrl+C to cancel): ", color("→", ColorYellow))
+			fmt.Printf("%s Press Enter to apply this tag (or Ctrl+C to cancel): ", color("→", qc.ColorYellow))
 			_, err := reader.ReadString('\n')
 			if err != nil {
 				return fmt.Errorf("failed to read user input: %v", err)
 			}
 		} else {
-			fmt.Printf("%s Auto-applying tag...\n", color("→", ColorYellow))
+			fmt.Printf("%s Auto-applying tag...\n", color("→", qc.ColorYellow))
 		}
 
 		// Apply the tag with progress indicator
@@ -1285,13 +1179,13 @@ func applyTags(ctx context.Context, config *Config, resources []*ResourceInfo, a
 
 		if err != nil {
 			// Stop on first failure
-			fmt.Printf("%s Failed to apply tag: %v\n", color("❌", ColorRed), err)
-			fmt.Printf("%s Stopping tagging process after %d successful applications.\n", color("⚠️", ColorYellow), successCount)
+			fmt.Printf("%s Failed to apply tag: %v\n", color("❌", qc.ColorRed), err)
+			fmt.Printf("%s Stopping tagging process after %d successful applications.\n", color("⚠️", qc.ColorYellow), successCount)
 			return err
 		}
 
 		successCount++
-		fmt.Printf("%s Successfully tagged %s %s\n", color("✅", ColorGreen), resource.Type, resource.ID)
+		fmt.Printf("%s Successfully tagged %s %s\n", color("✅", qc.ColorGreen), resource.Type, resource.ID)
 	}
 
 	return nil
