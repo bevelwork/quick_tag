@@ -6,7 +6,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.31.12
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.254.1
 	github.com/aws/aws-sdk-go-v2/service/sts v1.38.6
-	github.com/bevelwork/quick_color v0.0.0-20251007205149-564d252463ca
+	github.com/bevelwork/quick_color v1.2.20251008
 	gopkg.in/yaml.v3 v3.0.1
 )
 
