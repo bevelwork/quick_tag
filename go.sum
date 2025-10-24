@@ -26,8 +26,6 @@ github.com/aws/aws-sdk-go-v2/service/sts v1.38.6 h1:p3jIvqYwUZgu/XYeI48bJxOhvm47
 github.com/aws/aws-sdk-go-v2/service/sts v1.38.6/go.mod h1:WtKK+ppze5yKPkZ0XwqIVWD4beCwv056ZbPQNoeHqM8=
 github.com/aws/smithy-go v1.23.0 h1:8n6I3gXzWJB2DxBDnfxgBaSX6oe0d/t10qGz7OKqMCE=
 github.com/aws/smithy-go v1.23.0/go.mod h1:t1ufH5HMublsJYulve2RKmHDC15xu1f26kHCp/HgceI=
-github.com/bevelwork/quick_color v0.0.0-20251007143246-58bd2b21a166 h1:l9KZkC3k4TFHcHp22yMBmZ3uFA2WLzeQBDppKL6IX3E=
-github.com/bevelwork/quick_color v0.0.0-20251007143246-58bd2b21a166/go.mod h1:KfPPljPczUtNeZRj8PyLDt5jYfI6y8DAY5MW7xR0Rcs=
 github.com/bevelwork/quick_color v0.0.0-20251007205149-564d252463ca h1:Q6IYeJ7KmTtf8W4pxijIJvRi7jCnHoTpj107/3xtlkc=
 github.com/bevelwork/quick_color v0.0.0-20251007205149-564d252463ca/go.mod h1:KfPPljPczUtNeZRj8PyLDt5jYfI6y8DAY5MW7xR0Rcs=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405 h1:yhCVgyC4o1eVCa2tZl7eS0r+SDo693bJlVdllGtEeKM=
